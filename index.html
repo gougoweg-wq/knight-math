@@ -16,6 +16,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%;margin:0}
 body{background:var(--night);color:var(--fg);font:17px/1.4 var(--f-body);overflow-x:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
 #sky{position:fixed;inset:0;z-index:0;pointer-events:none}
@@ -69,8 +70,8 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 .boardBox{position:relative;width:min(440px,calc(100vw - 40px));aspect-ratio:1;transform:rotateX(14deg);transform-style:preserve-3d;transition:transform .5s}
 .frame{position:absolute;inset:-16px;border-radius:20px;background:linear-gradient(145deg,#7a4a24,var(--frame1) 40%,var(--frame2));box-shadow:0 30px 60px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -6px 0 rgba(0,0,0,.35)}
 .coords{position:absolute;inset:-16px;pointer-events:none;font:400 10px var(--f-display);color:rgba(255,230,190,.55)}
-.board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);border-radius:6px;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35)}
-.sq{position:relative;border:0;padding:0;display:grid;place-items:center;cursor:default;background:var(--sqL)}
+.board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);border-radius:6px;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35)}
+.sq{position:relative;border:0;padding:0;display:grid;place-items:center;min-width:0;min-height:0;cursor:default;background:var(--sqL)}
 .sq.d{background:var(--sqD)}
 .sq.l{background-image:linear-gradient(135deg,rgba(255,255,255,.18),transparent 60%)}
 .sq.d{background-image:linear-gradient(135deg,rgba(255,255,255,.08),rgba(0,0,0,.08))}
@@ -123,7 +124,7 @@ th{color:var(--muted);font-size:13px;border-top:0}
   <defs>
     <linearGradient id="gGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1a8"/><stop offset=".45" stop-color="#ffc93c"/><stop offset="1" stop-color="#c97a0c"/></linearGradient>
     <linearGradient id="gStar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6c2"/><stop offset="1" stop-color="#f3a51b"/></linearGradient>
-    <symbol id="knight" viewBox="0 0 100 100">
+    <symbol id="knightIcon" viewBox="0 0 100 100">
       <ellipse cx="50" cy="93" rx="32" ry="5" fill="rgba(0,0,0,.25)"/>
       <rect x="20" y="80" width="60" height="11" rx="4" fill="url(#gGold)" stroke="#5a3300" stroke-width="3"/>
       <rect x="27" y="71" width="46" height="11" rx="4" fill="url(#gGold)" stroke="#5a3300" stroke-width="3"/>
@@ -139,7 +140,7 @@ th{color:var(--muted);font-size:13px;border-top:0}
 
 <div class="wrap">
   <header>
-    <div class="logo"><svg aria-hidden="true"><use href="#knight"/></svg>Ход конём</div>
+    <div class="logo"><svg aria-hidden="true"><use href="#knightIcon"/></svg>Ход конём</div>
     <div class="score" id="score" aria-live="polite"><svg class="star" aria-hidden="true"><use href="#star"/></svg><span id="gems">0</span></div>
   </header>
   <nav class="levels" id="levels" aria-label="Уровни"></nav>
@@ -150,7 +151,7 @@ th{color:var(--muted);font-size:13px;border-top:0}
       <div class="boardBox" id="boardBox">
         <div class="frame"></div>
         <div class="board" id="board"></div>
-        <div class="knight idle" id="knight" aria-hidden="true"><svg><use href="#knight"/></svg></div>
+        <div class="knight idle" id="knight" aria-hidden="true"><svg><use href="#knightIcon"/></svg></div>
       </div>
       <p class="rules">Конь ходит буквой «Г»: две клетки прямо и одну вбок. Монеты с ответами лежат только там, куда он может прыгнуть.</p>
     </div>
@@ -161,7 +162,7 @@ th{color:var(--muted);font-size:13px;border-top:0}
 
 <div class="overlay" id="start">
   <div class="modal">
-    <svg class="hero" aria-hidden="true"><use href="#knight"/></svg>
+    <svg class="hero" aria-hidden="true"><use href="#knightIcon"/></svg>
     <h2>Ход конём</h2>
     <p>Решай примеры и задачи. Конь прыгает только на монету с правильным ответом. Собери все звёзды на 5 уровнях!</p>
     <button class="btn main" id="play" type="button">Играть ♞</button>
@@ -291,7 +292,7 @@ function next(){shownHint=false;ti++;if(ti>=LEVELS[lv].tasks.length){levelDone()
 const starCount=i=>{const s=stats[i],f=s.filter(x=>x.first).length;return f>=5?3:f>=3?2:f>=1?1:0};
 
 function levelDone(){const s=stats[lv],first=s.filter(x=>x.first).length,n=starCount(lv);drawLevels();report();sWin();confetti();
-  const ov=el('div','overlay');const m=el('div','modal');m.append(svgUse('knight','hero'),el('h2',null,lv<LEVELS.length-1?'Уровень пройден!':'Ты прошёл всё!'));
+  const ov=el('div','overlay');const m=el('div','modal');m.append(svgUse('knightIcon','hero'),el('h2',null,lv<LEVELS.length-1?'Уровень пройден!':'Ты прошёл всё!'));
   const bs=el('div','bigstars');for(let i=0;i<3;i++)bs.append(svgUse('star',i<n?'on':'off'));m.append(bs);
   m.append(el('p',null,'С первой попытки: '+first+' из '+s.length+'. Звёзд собрано: '+gems+'.'));
   const row=el('div','row');row.style.justifyContent='center';
