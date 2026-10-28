@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ход конём</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Nunito:wght@600;800;900&display=swap">
+<style>
+/* Layout: ночной шахматный клуб. Слева задание, справа наклонённая деревянная доска; на телефоне всё в столбик. Одна тёмная тема. */
+:root{
+  --night:#0b1426; --night2:#16264a; --panel:rgba(22,38,74,.78); --line:rgba(140,175,235,.22);
+  --fg:#f2f6ff; --muted:#a7b8d8; --gold:#ffcf4d; --gold2:#e09a1a; --ok:#5be39a; --bad:#ff6b6b;
+  --sqL:#f1dcb4; --sqD:#b98656; --frame1:#5a3418; --frame2:#2e1a0b;
+  --f-display:"Russo One","Nunito",system-ui,sans-serif; --f-body:"Nunito",system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--night);color:var(--fg);font:17px/1.4 var(--f-body);overflow-x:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+#sky{position:fixed;inset:0;z-index:0;pointer-events:none}
+#fx{position:fixed;inset:0;z-index:30;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding-block:16px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.logo{display:flex;align-items:center;gap:10px;font:400 30px/1 var(--f-display);letter-spacing:.03em;text-shadow:0 3px 0 #000}
+.logo svg{width:40px;height:40px;filter:drop-shadow(0 3px 0 #000)}
+.score{display:flex;align-items:center;gap:8px;font:400 22px var(--f-display);color:var(--gold);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 14px 6px 10px;backdrop-filter:blur(6px);font-variant-numeric:tabular-nums}
+.score .star{width:26px;height:26px}
+.score.bump{animation:bump .4s}
+@keyframes bump{40%{transform:scale(1.18)}}
+.levels{display:flex;flex-wrap:wrap;gap:8px}
+.lv{font:800 14px var(--f-body);color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:0 14px;min-height:40px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.lv b{font:400 13px var(--f-display);color:var(--fg);opacity:.6}
+.lv[aria-current="true"]{background:linear-gradient(#ffd866,#f0a821);color:#2a1a05;border-color:#ffe08a;box-shadow:0 4px 0 #9b5f08}
+.lv[aria-current="true"] b{color:#2a1a05;opacity:1}
+.lv .stars{color:var(--gold);letter-spacing:-1px}
+.game{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:start}
+@media (max-width:800px){.game{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0;backdrop-filter:blur(8px);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.prog{display:flex;gap:6px}
+.prog i{flex:1;height:8px;border-radius:9px;background:rgba(255,255,255,.12)}
+.prog i.on{background:linear-gradient(90deg,#ffd866,#f0a821)}
+.prog i.cur{background:rgba(255,207,77,.45);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.5}}
+.tag{font:900 12px var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.q{font:400 clamp(34px,6vw,48px)/1.1 var(--f-display);margin:0;text-shadow:0 3px 0 rgba(0,0,0,.4)}
+.q .qm{color:var(--gold)}
+.q.text{font:800 clamp(19px,3.4vw,23px)/1.4 var(--f-body);text-shadow:none}
+.pics{font-size:28px;line-height:1.35;overflow-wrap:anywhere;background:rgba(0,0,0,.2);border-radius:14px;padding:8px 12px}
+.col{font:400 44px/1.1 var(--f-display);font-variant-numeric:tabular-nums;display:inline-grid;justify-items:end;padding:10px 22px;background:#0d1a33;border:1px solid var(--line);border-radius:16px;width:max-content}
+.col .op{display:flex;gap:18px}.col .op span:first-child{color:var(--gold)}
+.col hr{width:100%;border:0;border-top:4px solid var(--fg);margin:6px 0;border-radius:4px}
+.col .res{color:var(--gold)}
+.how{color:var(--muted);font-size:15px;margin:0}
+.hint{background:linear-gradient(135deg,#27427a,#1f3462);border:1px solid #3f64ad;border-radius:14px;padding:12px 14px;font-weight:700;display:flex;gap:10px;align-items:flex-start}
+.hint::before{content:"💡";font-size:20px}
+.msg{min-height:30px;font:900 19px var(--f-body)}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:900 16px var(--f-body);background:rgba(255,255,255,.06);color:var(--fg);border:1px solid var(--line);border-radius:14px;padding:0 18px;min-height:46px;cursor:pointer;transition:transform .1s}
+.btn:active{transform:translateY(2px)}
+.btn.main{background:linear-gradient(#ffd866,#f0a821);color:#2a1a05;border-color:#ffe08a;box-shadow:0 5px 0 #9b5f08}
+.btn.main:active{box-shadow:0 2px 0 #9b5f08;transform:translateY(3px)}
+.btn:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+
+/* доска */
+.stage{perspective:1100px;display:grid;justify-items:center;gap:10px}
+.boardBox{position:relative;width:min(440px,calc(100vw - 40px));aspect-ratio:1;transform:rotateX(14deg);transform-style:preserve-3d;transition:transform .5s}
+.frame{position:absolute;inset:-16px;border-radius:20px;background:linear-gradient(145deg,#7a4a24,var(--frame1) 40%,var(--frame2));box-shadow:0 30px 60px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -6px 0 rgba(0,0,0,.35)}
+.coords{position:absolute;inset:-16px;pointer-events:none;font:400 10px var(--f-display);color:rgba(255,230,190,.55)}
+.board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);border-radius:6px;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35)}
+.sq{position:relative;border:0;padding:0;display:grid;place-items:center;cursor:default;background:var(--sqL)}
+.sq.d{background:var(--sqD)}
+.sq.l{background-image:linear-gradient(135deg,rgba(255,255,255,.18),transparent 60%)}
+.sq.d{background-image:linear-gradient(135deg,rgba(255,255,255,.08),rgba(0,0,0,.08))}
+.sq.opt{cursor:pointer}
+.coin{position:relative;width:78%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:400 clamp(15px,4.4vw,24px) var(--f-display);color:#3a2303;
+  background:radial-gradient(circle at 35% 30%,#fff3b8,#ffd25a 35%,#e39b17 75%,#a86408);box-shadow:0 5px 0 #7a4705,0 8px 14px rgba(0,0,0,.35),inset 0 -3px 0 rgba(0,0,0,.18);
+  animation:pop .35s backwards,float 2.4s ease-in-out infinite;transition:transform .15s}
+.coin::after{content:"";position:absolute;inset:9%;border-radius:50%;border:2px dashed rgba(122,71,5,.35)}
+.sq.opt:hover .coin{transform:translateY(-4px) scale(1.06)}
+@keyframes pop{from{transform:scale(0)}}
+@keyframes float{50%{translate:0 -3px}}
+.sq.wrong .coin{background:radial-gradient(circle at 35% 30%,#ffd0d0,#ff7a7a 40%,#c43a3a 80%);box-shadow:0 5px 0 #6e1c1c;color:#4a0b0b;animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px) rotate(-6deg)}75%{transform:translateX(6px) rotate(6deg)}}
+.sq .trail{position:absolute;width:34%;aspect-ratio:1;opacity:.9;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+.knight{position:absolute;left:0;top:0;width:calc(100% / 6);height:calc(100% / 6);display:grid;place-items:center;pointer-events:none;z-index:5}
+.knight svg{width:88%;height:88%;filter:drop-shadow(0 6px 0 rgba(0,0,0,.35)) drop-shadow(0 12px 10px rgba(0,0,0,.35));transform-origin:50% 90%}
+.knight.idle svg{animation:breathe 2.6s ease-in-out infinite}
+@keyframes breathe{50%{transform:scaleY(1.04)}}
+.rules{color:var(--muted);font-size:14px;max-width:440px;text-align:center;margin:8px 0 0}
+
+/* экраны */
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(5,10,22,.72);backdrop-filter:blur(6px)}
+.modal{width:min(460px,100%);background:linear-gradient(160deg,#1d3366,#121f40);border:1px solid #3a5ea8;border-radius:26px;padding:28px 24px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:rise .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes rise{from{transform:translateY(30px) scale(.9);opacity:0}}
+.modal h2{font:400 34px/1.1 var(--f-display);margin:0}
+.modal p{margin:0;color:var(--muted)}
+.modal .hero{width:130px;height:130px;filter:drop-shadow(0 10px 0 rgba(0,0,0,.35));animation:hop 1.6s ease-in-out infinite}
+@keyframes hop{50%{transform:translateY(-12px) rotate(-4deg)}}
+.bigstars{display:flex;gap:6px}
+.bigstars svg{width:58px;height:58px}
+.bigstars svg.off{opacity:.18;filter:grayscale(1)}
+.bigstars svg.on{animation:starIn .5s backwards}
+.bigstars svg.on:nth-child(2){animation-delay:.18s}.bigstars svg.on:nth-child(3){animation-delay:.36s}
+@keyframes starIn{from{transform:scale(0) rotate(-90deg)}}
+
+details{position:relative;z-index:1;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 16px}
+summary{cursor:pointer;font-weight:900;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:15px;margin-top:8px}
+th,td{text-align:left;padding:7px 6px;border-top:1px solid var(--line)}
+th{color:var(--muted);font-size:13px;border-top:0}
+.st-ok{color:var(--ok)}.st-mid{color:var(--gold)}.st-bad{color:var(--bad)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<canvas id="fx"></canvas>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1a8"/><stop offset=".45" stop-color="#ffc93c"/><stop offset="1" stop-color="#c97a0c"/></linearGradient>
+    <linearGradient id="gStar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6c2"/><stop offset="1" stop-color="#f3a51b"/></linearGradient>
+    <symbol id="knight" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="93" rx="32" ry="5" fill="rgba(0,0,0,.25)"/>
+      <rect x="20" y="80" width="60" height="11" rx="4" fill="url(#gGold)" stroke="#5a3300" stroke-width="3"/>
+      <rect x="27" y="71" width="46" height="11" rx="4" fill="url(#gGold)" stroke="#5a3300" stroke-width="3"/>
+      <path d="M31 72 C30 58 35 50 44 44 L31 47 C24 48 19 43 21 37 L38 21 C40 15 44 11 49 10 L51 3 L57 11 C71 15 79 32 77 50 C76 61 71 68 70 72 Z" fill="url(#gGold)" stroke="#5a3300" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M57 12 C66 18 72 30 71 44 M62 14 C70 22 75 34 74 48" fill="none" stroke="#a8650a" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M23 38 C27 37 31 38 33 40" fill="none" stroke="#5a3300" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="46" cy="23" r="3.6" fill="#2b1800"/><circle cx="47" cy="22" r="1.2" fill="#fff"/>
+      <path d="M36 26 C40 24 44 18 49 16" fill="none" stroke="rgba(255,255,255,.65)" stroke-width="2.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="star" viewBox="0 0 24 24"><path d="M12 1.8l3.1 6.6 7.1.8-5.3 4.9 1.5 7.1L12 17.6l-6.4 3.6 1.5-7.1L1.8 9.2l7.1-.8z" fill="url(#gStar)" stroke="#9b5f08" stroke-width="1.3" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header>
+    <div class="logo"><svg aria-hidden="true"><use href="#knight"/></svg>Ход конём</div>
+    <div class="score" id="score" aria-live="polite"><svg class="star" aria-hidden="true"><use href="#star"/></svg><span id="gems">0</span></div>
+  </header>
+  <nav class="levels" id="levels" aria-label="Уровни"></nav>
+
+  <div class="game">
+    <section class="card" id="card" aria-live="polite"></section>
+    <div class="stage">
+      <div class="boardBox" id="boardBox">
+        <div class="frame"></div>
+        <div class="board" id="board"></div>
+        <div class="knight idle" id="knight" aria-hidden="true"><svg><use href="#knight"/></svg></div>
+      </div>
+      <p class="rules">Конь ходит буквой «Г»: две клетки прямо и одну вбок. Монеты с ответами лежат только там, куда он может прыгнуть.</p>
+    </div>
+  </div>
+
+  <details id="teacher"><summary>Для учителя: как решал</summary><div id="report"></div></details>
+</div>
+
+<div class="overlay" id="start">
+  <div class="modal">
+    <svg class="hero" aria-hidden="true"><use href="#knight"/></svg>
+    <h2>Ход конём</h2>
+    <p>Решай примеры и задачи. Конь прыгает только на монету с правильным ответом. Собери все звёзды на 5 уровнях!</p>
+    <button class="btn main" id="play" type="button">Играть ♞</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const svgUse=(id,cls)=>{const s=document.createElementNS('http://www.w3.org/2000/svg','svg');if(cls)s.setAttribute('class',cls);const u=document.createElementNS('http://www.w3.org/2000/svg','use');u.setAttribute('href','#'+id);s.append(u);return s};
+const N=6;
+
+// Задания из диагностики Лео. hint — первый шаг, wrong — типичные ошибки как варианты ответа
+const LEVELS=[
+ {name:'Счёт в уме',tag:'Уровень 1 · счёт в уме',tasks:[
+  {q:'8 + 7',a:15,hint:'8 + 2 = 10, и ещё 5.',wrong:[14,16]},
+  {q:'14 − 6',a:8,hint:'14 − 4 = 10, и ещё минус 2.',wrong:[7,10]},
+  {q:'30 + 40',a:70,hint:'3 десятка + 4 десятка.',wrong:[34,700]},
+  {q:'47 + 8',a:55,hint:'47 + 3 = 50, и ещё 5.',wrong:[54,45]},
+  {q:'63 − 9',a:54,hint:'63 − 3 = 60, и ещё минус 6.',wrong:[56,64]}]},
+ {name:'Умножение',tag:'Уровень 2 · умножение и деление',tasks:[
+  {q:'2 · 6',a:12,hint:'Это 6 + 6.',wrong:[8,26]},
+  {q:'5 · 4',a:20,hint:'Это 5 + 5 + 5 + 5.',wrong:[9,25]},
+  {q:'3 · 7',a:21,hint:'Это 7 + 7 + 7.',wrong:[10,24]},
+  {q:'6 · 8',a:48,hint:'5 · 8 = 40, и ещё одна восьмёрка.',wrong:[42,56]},
+  {q:'20 : 4',a:5,hint:'Какое число умножить на 4, чтобы получить 20?',wrong:[4,16]}]},
+ {name:'Столбик',tag:'Уровень 3 · в столбик',tasks:[
+  {col:['35','+','47'],a:82,hint:'Сначала единицы: 5 + 7 = 12. Пишем 2, а 1 десяток запоминаем.',wrong:[72,712]},
+  {col:['126','+','258'],a:384,hint:'Единицы: 6 + 8 = 14. Пишем 4, 1 запоминаем.',wrong:[374,3714]},
+  {col:['72','−','38'],a:34,hint:'Из 2 нельзя вычесть 8. Занимаем десяток: 12 − 8 = 4.',wrong:[46,44]},
+  {col:['54','+','29'],a:83,hint:'4 + 9 = 13. Пишем 3, 1 запоминаем.',wrong:[73,713]},
+  {col:['403','−','167'],a:236,hint:'Из 3 нельзя вычесть 7 — занимаем. В десятках 0, значит занимаем у сотен.',wrong:[364,346]}]},
+ {name:'Задачи',tag:'Уровень 4 · задачи',tasks:[
+  {t:'У Лео было 24 наклейки. Он отдал другу 9. Сколько наклеек осталось?',pics:'🎨 × 24  ➜  отдал 9',a:15,hint:'Отдал — значит стало меньше. 24 − 9.',wrong:[33,16]},
+  {t:'В 4 коробках по 6 карандашей. Сколько всего карандашей?',pics:'📦 ✏️×6   📦 ✏️×6   📦 ✏️×6   📦 ✏️×6',a:24,hint:'4 раза по 6: 6 + 6 + 6 + 6.',wrong:[10,18]},
+  {t:'У Лео 3 робота. У каждого робота 4 колеса. Сколько всего колёс?',pics:'🤖 ⚙️⚙️⚙️⚙️   🤖 ⚙️⚙️⚙️⚙️   🤖 ⚙️⚙️⚙️⚙️',a:12,hint:'3 раза по 4.',wrong:[7,16]},
+  {t:'На доске 8 белых пешек и 8 чёрных. Сколько пешек всего?',pics:'♙♙♙♙♙♙♙♙   ♟♟♟♟♟♟♟♟',a:16,hint:'8 + 8.',wrong:[8,18]},
+  {t:'У Маши 18 конфет, а у Пети на 7 больше. Сколько конфет у них вместе?',pics:'Маша 🍬 × 18     Петя 🍬 × 18 + 7',a:43,hint:'Сначала узнай, сколько у Пети: 18 + 7. Потом сложи с Машиными.',wrong:[25,36]}]},
+ {name:'Логика',tag:'Уровень 5 · какое число дальше?',tasks:[
+  {seq:'2, 4, 6, 8, ',a:10,hint:'Каждый раз прибавляем 2.',wrong:[9,12]},
+  {seq:'3, 6, 9, ',a:12,hint:'Каждый раз прибавляем 3.',wrong:[10,11]},
+  {seq:'5, 10, 15, ',a:20,hint:'Каждый раз прибавляем 5.',wrong:[16,25]},
+  {seq:'20, 17, 14, ',a:11,hint:'Каждый раз отнимаем 3.',wrong:[12,10]},
+  {seq:'1, 2, 4, 8, ',a:16,hint:'Каждое число в 2 раза больше прошлого.',wrong:[10,12]}]}
+];
+
+let lv=0,ti=0,pos=[2,2],gems=0,shownHint=false,trail=new Set(),busy=false,opts={};
+const fresh=i=>LEVELS[i].tasks.map(()=>({tries:0,first:null,hint:false}));
+const stats=LEVELS.map((_,i)=>fresh(i));
+
+const moves=([r,c])=>[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]].map(([a,b])=>[r+a,c+b]).filter(([x,y])=>x>=0&&y>=0&&x<N&&y<N);
+const key=p=>p[0]+','+p[1];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function choices(t){const s=new Set([t.a]);(t.wrong||[]).forEach(w=>{if(w>=0)s.add(w)});[1,-1,10,2,-10].forEach(d=>{if(s.size<4&&t.a+d>=0)s.add(t.a+d)});return [...s].slice(0,4)}
+
+function placeOptions(){const t=LEVELS[lv].tasks[ti];const legal=shuffle(moves(pos));
+  // правильный ответ — на клетке, откуда дальше много ходов, чтобы в следующем задании было из чего выбирать
+  const ranked=legal.slice().sort((a,b)=>moves(b).length-moves(a).length);const good=ranked.slice(0,Math.max(1,Math.ceil(ranked.length/2)));const right=good[Math.floor(Math.random()*good.length)];
+  const rest=legal.filter(p=>p!==right);opts={};opts[key(right)]=t.a;choices(t).filter(n=>n!==t.a).forEach((n,i)=>{if(rest[i])opts[key(rest[i])]=n})}
+
+function cellXY(p){return [p[1]*100,p[0]*100]} // в процентах ширины клетки
+function placeKnight(){const k=$('knight');k.style.transform=`translate(${pos[1]*100}%,${pos[0]*100}%)`}
+
+function drawBoard(wrongKey){const b=$('board');b.replaceChildren();
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const k=r+','+c;const s=el('button','sq '+((r+c)%2?'d':'l'));s.type='button';s.dataset.k=k;
+    if(trail.has(k)&&key(pos)!==k)s.append(svgUse('star','trail'));
+    if(k in opts){s.classList.add('opt');const coin=el('span','coin',String(opts[k]));coin.style.animationDelay=(Math.random()*.15).toFixed(2)+'s, '+(Math.random()*2).toFixed(2)+'s';s.append(coin);s.setAttribute('aria-label','Ответ '+opts[k]);s.onclick=()=>pick(k,s)}
+    else if(k===wrongKey){s.classList.add('wrong');s.append(el('span','coin','✕'));s.tabIndex=-1}
+    else{s.tabIndex=-1;s.setAttribute('aria-hidden','true')}
+    b.append(s)}
+  placeKnight()}
+
+function drawCard(){const L=LEVELS[lv],t=L.tasks[ti],c=$('card');c.replaceChildren();
+  const pr=el('div','prog');L.tasks.forEach((_,i)=>pr.append(el('i',i<ti?'on':i===ti?'cur':'')));c.append(pr);
+  c.append(el('div','tag',L.tag+' · '+(ti+1)+' из '+L.tasks.length));
+  if(t.q){const q=el('p','q',t.q+' = ');q.append(el('span','qm','?'));c.append(q)}
+  if(t.col){const box=el('div','col');box.append(el('div',null,t.col[0]));const op=el('div','op');op.append(el('span',null,t.col[1]),el('span',null,t.col[2]));box.append(op,el('hr'),el('div','res','?'));c.append(box,el('p','how','Реши на доске в столбик, потом найди ответ на поле.'))}
+  if(t.t){c.append(el('p','q text',t.t));if(t.pics)c.append(el('div','pics',t.pics))}
+  if(t.seq){const q=el('p','q',t.seq);q.append(el('span','qm','?'));c.append(q)}
+  const m=el('div','msg');m.id='msg';c.append(m);
+  const h=el('div','hint',t.hint);h.id='hint';h.hidden=!shownHint;c.append(h);
+  const row=el('div','row');const hb=el('button','btn','Подсказка');hb.type='button';hb.id='hb';hb.onclick=()=>{shownHint=true;stats[lv][ti].hint=true;$('hint').hidden=false;hb.disabled=true;report()};hb.disabled=shownHint;row.append(hb);c.append(row)}
+
+// звук
+let ac=null;function tone(f,d,type='triangle',v=.13,delay=0){if(!ac)return;const t0=ac.currentTime+delay;const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t0);g.gain.setValueAtTime(v,t0);g.gain.exponentialRampToValueAtTime(.001,t0+d);o.connect(g).connect(ac.destination);o.start(t0);o.stop(t0+d)}
+const sOk=()=>{tone(523,.15);tone(659,.15,'triangle',.13,.08);tone(988,.3,'triangle',.12,.16)};
+const sBad=()=>{tone(180,.25,'sawtooth',.06);tone(140,.3,'sawtooth',.05,.08)};
+const sJump=()=>{if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(300,ac.currentTime);o.frequency.exponentialRampToValueAtTime(900,ac.currentTime+.25);g.gain.setValueAtTime(.08,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.3);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+.3)};
+const sWin=()=>[523,659,784,1047].forEach((f,i)=>tone(f,.35,'triangle',.12,i*.12));
+
+// частицы
+const fx=$('fx'),fctx=fx.getContext('2d');let parts=[];
+function sizeFx(){fx.width=innerWidth*devicePixelRatio;fx.height=innerHeight*devicePixelRatio}
+function burst(x,y,n=34,colors=['#ffd866','#fff3b8','#f0a821','#5be39a','#7fb4ff']){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=2+Math.random()*6;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3,life:1,r:3+Math.random()*4,c:colors[i%colors.length],star:Math.random()<.4,rot:Math.random()*6})}if(!loopOn)loop()}
+let loopOn=false;function loop(){loopOn=true;const d=devicePixelRatio;fctx.clearRect(0,0,fx.width,fx.height);parts=parts.filter(p=>p.life>0);
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.22;p.vx*=.98;p.life-=.016;p.rot+=.15;fctx.globalAlpha=Math.max(0,p.life);fctx.fillStyle=p.c;fctx.save();fctx.translate(p.x*d,p.y*d);fctx.rotate(p.rot);
+    if(p.star){fctx.beginPath();for(let k=0;k<10;k++){const rr=(k%2?p.r*.45:p.r)*d;fctx.lineTo(Math.cos(k*Math.PI/5)*rr,Math.sin(k*Math.PI/5)*rr)}fctx.fill()}else fctx.fillRect(-p.r*d/2,-p.r*d/2,p.r*d,p.r*d*.6);fctx.restore()});
+  fctx.globalAlpha=1;if(parts.length)requestAnimationFrame(loop);else loopOn=false}
+function confetti(){for(let i=0;i<6;i++)setTimeout(()=>burst(innerWidth*(.15+Math.random()*.7),innerHeight*(.2+Math.random()*.3),40),i*140)}
+
+// звёздное небо
+const sky=$('sky'),sctx=sky.getContext('2d');let stars=[];
+function sizeSky(){sky.width=innerWidth*devicePixelRatio;sky.height=innerHeight*devicePixelRatio;stars=Array.from({length:120},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.4+.3,p:Math.random()*6}))}
+function drawSky(t){const w=sky.width,h=sky.height;const g=sctx.createRadialGradient(w*.5,-h*.1,0,w*.5,h*.3,h*1.1);g.addColorStop(0,'#24407a');g.addColorStop(1,'#0b1426');sctx.fillStyle=g;sctx.fillRect(0,0,w,h);
+  stars.forEach(s=>{sctx.globalAlpha=.35+.45*Math.sin(t/900+s.p);sctx.fillStyle='#dfe9ff';sctx.beginPath();sctx.arc(s.x*w,s.y*h,s.r*devicePixelRatio,0,7);sctx.fill()});sctx.globalAlpha=1;
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)requestAnimationFrame(drawSky)}
+
+function jumpTo(target,done){const k=$('knight'),svg=k.querySelector('svg');k.classList.remove('idle');
+  const from=[pos[1]*100,pos[0]*100],to=[target[1]*100,target[0]*100];sJump();
+  if(!k.animate){pos=target;placeKnight();done();return}
+  const frames=[];for(let i=0;i<=10;i++){const t=i/10,x=from[0]+(to[0]-from[0])*t,y=from[1]+(to[1]-from[1])*t-Math.sin(Math.PI*t)*60;frames.push({transform:`translate(${x}%,${y}%)`})}
+  const a=k.animate(frames,{duration:520,easing:'ease-in-out'});svg.animate([{transform:'scale(1)'},{transform:'scale(1.25) rotate(-10deg)'},{transform:'scale(.92,1.1)'},{transform:'scale(1)'}],{duration:520});
+  a.onfinish=()=>{pos=target;placeKnight();k.classList.add('idle');done()}}
+
+function pick(k,s){if(busy)return;const t=LEVELS[lv].tasks[ti],st=stats[lv][ti];st.tries++;
+  if(opts[k]===t.a){if(st.first===null)st.first=st.tries===1;busy=true;sOk();
+    const m=$('msg');m.className='msg ok';m.textContent=st.tries===1?['Точно!','Отлично!','Супер ход!','В точку!'][Math.floor(Math.random()*4)]:'Есть! Получилось.';
+    const r=s.getBoundingClientRect();const target=k.split(',').map(Number);const from=key(pos);opts={};
+    [...$('board').children].forEach(x=>{if(x!==s){const c=x.querySelector('.coin');if(c&&!x.classList.contains('wrong'))c.style.opacity='.25'}});
+    jumpTo(target,()=>{trail.add(from);burst(r.left+r.width/2,r.top+r.height/2);gems++;$('gems').textContent=gems;const sc=$('score');sc.classList.remove('bump');void sc.offsetWidth;sc.classList.add('bump');drawBoard();setTimeout(()=>{busy=false;next()},380)});
+    report()}
+  else{if(st.first===null)st.first=false;sBad();const m=$('msg');m.className='msg bad';m.textContent=opts[k]+' — не подходит. Попробуй ещё'+(shownHint?'.':' или возьми подсказку.');delete opts[k];drawBoard(k);
+    if(st.tries>=2&&!shownHint){shownHint=true;st.hint=true;$('hint').hidden=false;$('hb').disabled=true}report()}}
+
+function next(){shownHint=false;ti++;if(ti>=LEVELS[lv].tasks.length){levelDone();return}placeOptions();drawCard();drawBoard()}
+const starCount=i=>{const s=stats[i],f=s.filter(x=>x.first).length;return f>=5?3:f>=3?2:f>=1?1:0};
+
+function levelDone(){const s=stats[lv],first=s.filter(x=>x.first).length,n=starCount(lv);drawLevels();report();sWin();confetti();
+  const ov=el('div','overlay');const m=el('div','modal');m.append(svgUse('knight','hero'),el('h2',null,lv<LEVELS.length-1?'Уровень пройден!':'Ты прошёл всё!'));
+  const bs=el('div','bigstars');for(let i=0;i<3;i++)bs.append(svgUse('star',i<n?'on':'off'));m.append(bs);
+  m.append(el('p',null,'С первой попытки: '+first+' из '+s.length+'. Звёзд собрано: '+gems+'.'));
+  const row=el('div','row');row.style.justifyContent='center';
+  if(lv<LEVELS.length-1){const b=el('button','btn main','Дальше: '+LEVELS[lv+1].name);b.type='button';b.onclick=()=>{ov.remove();go(lv+1)};row.append(b)}
+  const again=el('button','btn','Ещё раз этот уровень');again.type='button';again.onclick=()=>{ov.remove();go(lv,true)};row.append(again);m.append(row);ov.append(m);document.body.append(ov);(row.querySelector('.main')||again).focus()}
+
+function go(n,reset){lv=n;ti=0;shownHint=false;if(reset)stats[lv]=fresh(lv);placeOptions();drawLevels();drawCard();drawBoard();report()}
+
+function drawLevels(){const nav=$('levels');nav.replaceChildren();LEVELS.forEach((L,i)=>{const b=el('button','lv');b.type='button';b.append(el('b',null,String(i+1)),document.createTextNode(L.name));
+  if(stats[i].every(x=>x.first!==null)){b.append(el('span','stars','★'.repeat(starCount(i))+'☆'.repeat(3-starCount(i))))}
+  b.setAttribute('aria-current',String(i===lv));b.onclick=()=>go(i);nav.append(b)})}
+
+function report(){const box=$('report');box.replaceChildren();const tb=el('table');const h=el('tr');['Линия','С первого раза','С подсказкой','Вывод'].forEach(x=>h.append(el('th',null,x)));tb.append(h);
+  LEVELS.forEach((L,i)=>{const done=stats[i].filter(x=>x.first!==null);const f=done.filter(x=>x.first).length,hi=done.filter(x=>x.hint).length;const tr=el('tr');
+    let v='—',cls='';if(done.length){const r=f/done.length;if(r>=.8){v='уверенно';cls='st-ok'}else if(r>=.5){v='с подсказкой';cls='st-mid'}else{v='нужно учить';cls='st-bad'}}
+    tr.append(el('td',null,L.name),el('td',null,done.length?f+' из '+done.length:'—'),el('td',null,done.length?String(hi):'—'),el('td',cls,v));tb.append(tr)});
+  box.append(tb);const miss=[];LEVELS.forEach((L,i)=>L.tasks.forEach((t,j)=>{if(stats[i][j].first===false)miss.push((t.q||(t.seq&&t.seq+'…')||(t.col&&t.col.join(' '))||t.t.slice(0,40)+'…')+' → '+t.a)}));
+  if(miss.length)box.append(el('p','how','Ошибался в: '+miss.join('; ')))}
+
+addEventListener('resize',()=>{sizeFx();sizeSky()});sizeFx();sizeSky();requestAnimationFrame(drawSky);
+placeOptions();drawLevels();drawCard();drawBoard();report();
+$('play').onclick=()=>{try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}$('start').remove();sOk();const r=$('boardBox').getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,50)};
+$('play').focus();
+})();
+</script>
+</body>
+</html>
